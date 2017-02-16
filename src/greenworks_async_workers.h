@@ -212,6 +212,22 @@ class RequestEncryptedAppTicketWorker : public SteamCallbackAsyncWorker {
       call_result_;
 };
 
+class FindLeaderboardWorker : public SteamCallbackAsyncWorker {
+  public:
+    FindLeaderboardWorker(std::string leaderboard_name,
+                          Nan::Callback* success_callback,
+                          Nan::Callback* error_callback);
+    void OnFindLeaderboardCompleted(
+      LeaderboardFindResult_t*, bool);
+    virtual void Execute();
+    virtual void HandleOKCallback();
+  private:
+    std::string leaderboard_name_;
+    uint64 leaderboard_handle_;
+    CCallResult< FindLeaderboardWorker, LeaderboardFindResult_t >
+      call_result_;
+};
+
 }  // namespace greenworks
 
 #endif  // SRC_GREENWORKS_ASYNC_WORKERS_H_

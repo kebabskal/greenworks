@@ -357,4 +357,43 @@ void RequestEncryptedAppTicketWorker::HandleOKCallback() {
   callback->Call(1, argv);
 }
 
+FindLeaderboardWorker::FindLeaderboardWorker(
+    std::string leaderboard_name,
+    Nan::Callback* success_callback, 
+    Nan::Callback* error_callback)
+       :SteamCallbackAsyncWorker(success_callback, error_callback),
+       leaderboard_name_(leaderboard_name) {
+}
+
+void FindLeaderboardWorker::Execute() {
+  SteamAPICall_t steam_api_call = SteamUserStats()->FindLeaderboard(
+    leaderboard_name_.c_str());
+  call_result_.Set(steam_api_call, this,
+      &FindLeaderboardWorker::OnFindLeaderboardCompleted);
+
+  WaitForCompleted();
+}
+
+void FindLeaderboardWorker::OnFindLeaderboardCompleted(
+    LeaderboardFindResult_t* result, bool io_failure) {
+
+  if (io_failure) {
+    SetErrorMessage("IO Error finding leaderboard");
+    leaderboard_handle_ = 0;
+  } else if (result->m_hSteamLeaderboard == 0) {
+    SetErrorMessage("Error finding leaderboard");
+    leaderboard_handle_ = 0;
+  } else {
+    leaderboard_handle_ = result->m_hSteamLeaderboard;
+  }
+  is_completed_ = true;
+}
+
+void FindLeaderboardWorker::HandleOKCallback() {
+  Nan::HandleScope scope;
+  v8::Local<v8::Value> argv[] = { Nan::New(utils::uint64ToString(leaderboard_handle_)).ToLocalChecked(), 
+                                  Nan::New(leaderboard_handle_ != 0) };
+  callback->Call(2, argv);
+}
+
 }  // namespace greenworks
