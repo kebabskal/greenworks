@@ -38,11 +38,39 @@ NAN_METHOD(FindLeaderboard) {
   info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(UploadLeaderboardScore) {
+  Nan::HandleScope scope;
+  if (info.Length() < 4 || 
+      !info[0]->IsInt32() || 
+      !info[1]->IsInt32() || 
+      !info[2]->IsBoolean() || 
+      !info[3]->IsFunction()) {
+    THROW_BAD_ARGS("Bad arguments");
+  }
+
+  int leaderboard_handle = info[0]->Int32Value();
+  int score = info[1]->Int32Value();
+  bool force = info[2]->BooleanValue();
+  Nan::Callback* success_callback = new Nan::Callback(info[3].As<v8::Function>());
+  Nan::Callback* error_callback = new Nan::Callback(info[4].As<v8::Function>());
+  
+  Nan::AsyncQueueWorker(new greenworks::UploadLeaderboardScoreWorker(leaderboard_handle,
+                                                          score,
+                                                          force,
+                                                          success_callback,
+                                                          error_callback));
+
+  info.GetReturnValue().Set(Nan::Undefined());
+}
+
 void RegisterAPIs(v8::Handle<v8::Object> exports) {
   Nan::Set(exports,
            Nan::New("FindLeaderboard").ToLocalChecked(),
            Nan::New<v8::FunctionTemplate>(FindLeaderboard)->GetFunction());
-  }
+  Nan::Set(exports,
+           Nan::New("UploadLeaderboardScore").ToLocalChecked(),
+           Nan::New<v8::FunctionTemplate>(UploadLeaderboardScore)->GetFunction());
+}
 
 SteamAPIRegistry::Add X(RegisterAPIs);
 

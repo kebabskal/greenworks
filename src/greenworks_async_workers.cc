@@ -396,4 +396,49 @@ void FindLeaderboardWorker::HandleOKCallback() {
   callback->Call(2, argv);
 }
 
+UploadLeaderboardScoreWorker::UploadLeaderboardScoreWorker(
+    uint64 leaderboard_handle,
+    int score,
+    bool force,
+    Nan::Callback* success_callback, 
+    Nan::Callback* error_callback)
+       :SteamCallbackAsyncWorker(success_callback, error_callback),
+       score_(score),
+       force_(force),
+       leaderboard_handle_(leaderboard_handle) {
+}
+
+void UploadLeaderboardScoreWorker::Execute() {
+  SteamAPICall_t steam_api_call = SteamUserStats()->UploadLeaderboardScore( 
+    leaderboard_handle_, 
+    force_ ? k_ELeaderboardUploadScoreMethodForceUpdate : k_ELeaderboardUploadScoreMethodKeepBest, 
+    score_, 
+    NULL, 0 );
+  call_result_.Set(steam_api_call, this,
+      &UploadLeaderboardScoreWorker::OnUploadLeaderboardScoreCompleted);
+
+  WaitForCompleted();
+}
+
+void UploadLeaderboardScoreWorker::OnUploadLeaderboardScoreCompleted(
+    LeaderboardScoreUploaded_t* result, bool io_failure) {
+
+  if (io_failure) {
+    SetErrorMessage("IO Error uploading score");
+    success_ = false;
+  } else if (!result->m_bSuccess) {
+    SetErrorMessage("Error uploading score");
+    success_ = false;
+  } else {
+    success_ = true;
+  }
+  is_completed_ = true;
+}
+
+void UploadLeaderboardScoreWorker::HandleOKCallback() {
+  Nan::HandleScope scope;
+  v8::Local<v8::Value> argv[] = { Nan::New(success_) };
+  callback->Call(1, argv);
+}
+
 }  // namespace greenworks

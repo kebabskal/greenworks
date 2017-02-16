@@ -228,6 +228,26 @@ class FindLeaderboardWorker : public SteamCallbackAsyncWorker {
       call_result_;
 };
 
+class UploadLeaderboardScoreWorker : public SteamCallbackAsyncWorker {
+  public:
+    UploadLeaderboardScoreWorker(uint64 leaderboard_handle,
+                      int score,
+                      bool force,
+                      Nan::Callback* success_callback,
+                      Nan::Callback* error_callback);
+    void OnUploadLeaderboardScoreCompleted(
+      LeaderboardScoreUploaded_t*, bool);
+    virtual void Execute();
+    virtual void HandleOKCallback();
+  private:
+    int score_;
+    bool force_;
+    bool success_;
+    uint64 leaderboard_handle_;
+    CCallResult< UploadLeaderboardScoreWorker, LeaderboardScoreUploaded_t >
+      call_result_;
+};
+
 }  // namespace greenworks
 
 #endif  // SRC_GREENWORKS_ASYNC_WORKERS_H_
