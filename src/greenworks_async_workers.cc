@@ -509,6 +509,8 @@ void DownloadLeaderboardEntriesWorker::HandleOKCallback() {
     entries->Set(i, entry); 
   }
 
+  delete [] entries_;
+
   v8::Local<v8::Value> argv[] = { entries };
   callback->Call(1, argv);
 }
