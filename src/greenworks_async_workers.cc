@@ -391,7 +391,7 @@ void FindLeaderboardWorker::OnFindLeaderboardCompleted(
 
 void FindLeaderboardWorker::HandleOKCallback() {
   Nan::HandleScope scope;
-  v8::Local<v8::Value> argv[] = { Nan::New(utils::uint64ToString(leaderboard_handle_)).ToLocalChecked(), 
+  v8::Local<v8::Value> argv[] = { Nan::New((double)leaderboard_handle_), 
                                   Nan::New(leaderboard_handle_ != 0) };
   callback->Call(2, argv);
 }
