@@ -248,6 +248,29 @@ class UploadLeaderboardScoreWorker : public SteamCallbackAsyncWorker {
       call_result_;
 };
 
+class DownloadLeaderboardEntriesWorker : public SteamCallbackAsyncWorker {
+  public:
+    DownloadLeaderboardEntriesWorker(uint64 leaderboard_handle,
+                      int request_type,
+                      int range_start,
+                      int range_end,
+                      Nan::Callback* success_callback,
+                      Nan::Callback* error_callback);
+    void OnDownloadLeaderboardEntriesCompleted(
+      LeaderboardScoresDownloaded_t*, bool);
+    virtual void Execute();
+    virtual void HandleOKCallback();
+  private:
+    uint64 leaderboard_handle_;
+    int request_type_;
+    int range_start_;
+    int range_end_;
+    LeaderboardEntry_t* entries_;
+    int entries_count_;
+    CCallResult< DownloadLeaderboardEntriesWorker, LeaderboardScoresDownloaded_t >
+      call_result_;
+};
+
 }  // namespace greenworks
 
 #endif  // SRC_GREENWORKS_ASYNC_WORKERS_H_

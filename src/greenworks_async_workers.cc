@@ -441,4 +441,76 @@ void UploadLeaderboardScoreWorker::HandleOKCallback() {
   callback->Call(1, argv);
 }
 
+DownloadLeaderboardEntriesWorker::DownloadLeaderboardEntriesWorker(
+    uint64 leaderboard_handle,
+    int request_type,
+    int range_start,
+    int range_end,
+    Nan::Callback* success_callback,
+    Nan::Callback* error_callback)
+       :SteamCallbackAsyncWorker(success_callback, error_callback),
+        leaderboard_handle_(leaderboard_handle),
+        request_type_(request_type),
+        range_start_(range_start),
+        range_end_(range_end) {
+}
+
+void DownloadLeaderboardEntriesWorker::Execute() {
+  SteamAPICall_t steam_api_call = SteamUserStats()->DownloadLeaderboardEntries( 
+    leaderboard_handle_, 
+    (ELeaderboardDataRequest)request_type_, 
+    range_start_,
+    range_end_);
+  call_result_.Set(steam_api_call, this,
+      &DownloadLeaderboardEntriesWorker::OnDownloadLeaderboardEntriesCompleted);
+
+  WaitForCompleted();
+}
+
+void DownloadLeaderboardEntriesWorker::OnDownloadLeaderboardEntriesCompleted(
+    LeaderboardScoresDownloaded_t* result, bool io_failure) {
+
+  if (io_failure) {
+    SetErrorMessage("IO Error downloading leaderboard entries");
+    entries_ = NULL;
+  } else {
+    entries_count_ = result->m_cEntryCount;
+    entries_ = new LeaderboardEntry_t[entries_count_];
+
+    for (int i = 0; i < entries_count_; i++) {
+      SteamUserStats()->GetDownloadedLeaderboardEntry(
+        result->m_hSteamLeaderboardEntries,
+        i, &entries_[i], NULL, 0);
+    }
+
+  }
+  is_completed_ = true;
+}
+
+void DownloadLeaderboardEntriesWorker::HandleOKCallback() {
+  Nan::HandleScope scope;
+
+  v8::Local<v8::Array> entries = Nan::New<v8::Array>();
+  for (int i = 0; i < entries_count_; i++) {
+    v8::Local<v8::Object> entry = Nan::New<v8::Object>();
+
+    entry->Set(Nan::New("screenName").ToLocalChecked(),
+                Nan::New(SteamFriends()->GetFriendPersonaName(entries_[i].m_steamIDUser))
+                    .ToLocalChecked());
+    entry->Set(Nan::New("globalRank").ToLocalChecked(),
+                Nan::New(entries_[i].m_nGlobalRank));
+    entry->Set(Nan::New("score").ToLocalChecked(),
+                Nan::New(entries_[i].m_nScore));
+    entry->Set(Nan::New("details").ToLocalChecked(),
+                Nan::New(entries_[i].m_cDetails));
+    entry->Set(Nan::New("ugcHandle").ToLocalChecked(),
+                Nan::New((double)entries_[i].m_hUGC));
+    
+    entries->Set(i, entry); 
+  }
+
+  v8::Local<v8::Value> argv[] = { entries };
+  callback->Call(1, argv);
+}
+
 }  // namespace greenworks

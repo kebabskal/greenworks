@@ -62,6 +62,34 @@ NAN_METHOD(UploadLeaderboardScore) {
 
   info.GetReturnValue().Set(Nan::Undefined());
 }
+  
+NAN_METHOD(DownloadLeaderboardEntries) {
+  Nan::HandleScope scope;
+  if (info.Length() < 5 || 
+      !info[0]->IsInt32() || // leaderboard_handle
+      !info[1]->IsInt32() || // request_type
+      !info[2]->IsInt32() || // range_start
+      !info[3]->IsInt32() || // range_end
+      !info[4]->IsFunction()) { // success_callback
+    THROW_BAD_ARGS("Bad arguments");
+  }
+
+  int leaderboard_handle = info[0]->Int32Value();
+  int request_type = info[1]->Int32Value();
+  int range_start = info[2]->Int32Value();
+  int range_end = info[3]->Int32Value();
+  Nan::Callback* success_callback = new Nan::Callback(info[4].As<v8::Function>());
+  Nan::Callback* error_callback = new Nan::Callback(info[5].As<v8::Function>());
+
+   Nan::AsyncQueueWorker(new greenworks::DownloadLeaderboardEntriesWorker(leaderboard_handle,
+                                                          request_type,
+                                                          range_start,
+                                                          range_end,
+                                                          success_callback,
+                                                          error_callback));
+
+  info.GetReturnValue().Set(Nan::Undefined());
+}
 
 void RegisterAPIs(v8::Handle<v8::Object> exports) {
   Nan::Set(exports,
@@ -70,6 +98,9 @@ void RegisterAPIs(v8::Handle<v8::Object> exports) {
   Nan::Set(exports,
            Nan::New("UploadLeaderboardScore").ToLocalChecked(),
            Nan::New<v8::FunctionTemplate>(UploadLeaderboardScore)->GetFunction());
+  Nan::Set(exports,
+           Nan::New("DownloadLeaderboardEntries").ToLocalChecked(),
+           Nan::New<v8::FunctionTemplate>(DownloadLeaderboardEntries)->GetFunction());
 }
 
 SteamAPIRegistry::Add X(RegisterAPIs);
