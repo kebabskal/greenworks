@@ -515,4 +515,47 @@ void DownloadLeaderboardEntriesWorker::HandleOKCallback() {
   callback->Call(1, argv);
 }
 
+AttachLeaderboardUGCWorker::AttachLeaderboardUGCWorker(
+    uint64 leaderboard_handle,
+    uint64 ugc_handle,
+   	Nan::Callback* success_callback,
+    Nan::Callback* error_callback)
+       :SteamCallbackAsyncWorker(success_callback, error_callback),
+        leaderboard_handle_(leaderboard_handle),
+        ugc_handle_(ugc_handle) {
+}
+
+void AttachLeaderboardUGCWorker::Execute() {
+  SteamAPICall_t steam_api_call = SteamUserStats()->AttachLeaderboardUGC( 
+    leaderboard_handle_, 
+    ugc_handle_);
+  call_result_.Set(steam_api_call, this,
+      &AttachLeaderboardUGCWorker::OnAttachLeaderboardUGCCompleted);
+
+  WaitForCompleted();
+}
+
+void AttachLeaderboardUGCWorker::OnAttachLeaderboardUGCCompleted(
+    LeaderboardUGCSet_t* result, bool io_failure) {
+
+  if (io_failure) {
+    SetErrorMessage("IO Error attaching UGC to leaderboard entry");
+  } else {
+    result_ = result->m_eResult;
+    if (result->m_eResult == k_EResultOK) {
+      
+    } else if (result->m_eResult == k_EResultTimeout) {
+      SetErrorMessage("UGC Leaderboard upload timed out");
+    } else {
+      SetErrorMessage("Invalid handle");
+    }
+  }
+  is_completed_ = true;
+}
+
+void AttachLeaderboardUGCWorker::HandleOKCallback() {
+  v8::Local<v8::Value> argv[] = { Nan::New(result_) };
+  callback->Call(1, argv);
+}
+
 }  // namespace greenworks

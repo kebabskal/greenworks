@@ -81,12 +81,34 @@ NAN_METHOD(DownloadLeaderboardEntries) {
   Nan::Callback* success_callback = new Nan::Callback(info[4].As<v8::Function>());
   Nan::Callback* error_callback = new Nan::Callback(info[5].As<v8::Function>());
 
-   Nan::AsyncQueueWorker(new greenworks::DownloadLeaderboardEntriesWorker(leaderboard_handle,
+  Nan::AsyncQueueWorker(new greenworks::DownloadLeaderboardEntriesWorker(leaderboard_handle,
                                                           request_type,
                                                           range_start,
                                                           range_end,
                                                           success_callback,
                                                           error_callback));
+
+  info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(AttachLeaderboardUGC) {
+  Nan::HandleScope scope;
+  if (info.Length() < 3 ||
+    !info[0]->IsString() || // leaderboard_handle
+    !info[1]->IsString() || // hUGC
+    !info[2]->IsFunction()) { // success_callback
+    THROW_BAD_ARGS("Bad arguments");
+  }
+
+  int leaderboard_handle = utils::strToUint64(*(v8::String::Utf8Value(info[0])));
+  int ugc_handle = utils::strToUint64(*(v8::String::Utf8Value(info[1])));
+  Nan::Callback* success_callback = new Nan::Callback(info[2].As<v8::Function>());
+  Nan::Callback* error_callback = new Nan::Callback(info[3].As<v8::Function>());
+
+  Nan::AsyncQueueWorker(new greenworks::AttachLeaderboardUGCWorker(leaderboard_handle,
+                                                                   ugc_handle,
+                                                                   success_callback,
+                                                                   error_callback));
 
   info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -101,6 +123,10 @@ void RegisterAPIs(v8::Handle<v8::Object> exports) {
   Nan::Set(exports,
            Nan::New("DownloadLeaderboardEntries").ToLocalChecked(),
            Nan::New<v8::FunctionTemplate>(DownloadLeaderboardEntries)->GetFunction());
+  Nan::Set(exports,
+           Nan::New("AttachLeaderboardUGC").ToLocalChecked(),
+           Nan::New<v8::FunctionTemplate>(AttachLeaderboardUGC)->GetFunction());
+
 }
 
 SteamAPIRegistry::Add X(RegisterAPIs);

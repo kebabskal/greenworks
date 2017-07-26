@@ -271,6 +271,24 @@ class DownloadLeaderboardEntriesWorker : public SteamCallbackAsyncWorker {
       call_result_;
 };
 
+class AttachLeaderboardUGCWorker : public SteamCallbackAsyncWorker {
+  public:
+    AttachLeaderboardUGCWorker(uint64 leaderboard_handle,
+                      uint64 ugc_handle,
+                      Nan::Callback* success_callback,
+                      Nan::Callback* error_callback);
+    void OnAttachLeaderboardUGCCompleted(
+      LeaderboardUGCSet_t*, bool);
+    virtual void Execute();
+    virtual void HandleOKCallback();
+  private:
+    uint64 leaderboard_handle_;
+    uint64 ugc_handle_;
+    CCallResult< AttachLeaderboardUGCWorker, LeaderboardUGCSet_t >
+      call_result_;
+    bool result_;
+};
+
 }  // namespace greenworks
 
 #endif  // SRC_GREENWORKS_ASYNC_WORKERS_H_
